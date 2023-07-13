@@ -7,16 +7,27 @@ header("Access-Control-Allow-Methods: OPTIONS,GET,POST,PUT,DELETE");
 header("Access-Control-Max-Age: 3600");
 header("Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With");
 
-if(array_key_exists("all", $_GET)){
-    $Data = $conn->query("SELECT * FROM vendor")->fetch_all(MYSQLI_ASSOC);
-    if(!empty($Data)){
-        $response['data'] = $Data;
-    }else{
-        $response['status'] ="error";
-        $response['message'] ="Data Not Found";
-    }
+//previous code---
+// if(array_key_exists("all", $_GET)){
+//     $Data = $conn->query("SELECT * FROM vendor")->fetch_all(MYSQLI_ASSOC);
+//     if(!empty($Data)){
+//         $response['data'] = $Data;
+//     }else{
+//         $response['status'] ="error";
+//         $response['message'] ="Data Not Found";
+//     }
+
+//updated code-------
+if (array_key_exists("all", $_GET)) {
+    $data = $conn->query("SELECT * FROM vendor")->fetch_all(MYSQLI_ASSOC);
+    $response = !empty($data) ? ['data' => $data] : ['status' => "error", 'message' => "Data Not Found"];
+
     echo json_encode($response);
-}else if(array_key_exists("add", $_GET)){
+}
+    // echo json_encode($response);
+
+
+if(array_key_exists("add", $_GET)){
     if($_SERVER['REQUEST_METHOD'] == 'POST'){
         $_POST = json_decode(file_get_contents("php://input"), true);
         $Name = $_POST['name'];
@@ -29,14 +40,20 @@ if(array_key_exists("all", $_GET)){
         $DateTime =date("Y-m-d H:i:s");
 
         $VendorId = "";
-        $sql = "SELECT * FROM vendor ORDER BY vendorId DESC LIMIT 1";
+        // $sql = "SELECT * FROM vendor ORDER BY vendorId DESC LIMIT 1";
+        $sql= "SELECT IFNULL(MAX(id), 0) AS max_id FROM vendor";
         $result = $conn->query($sql);
-        if($result ->num_rows >0){
-                while($row = mysqli_fetch_array($result)){
-                        $outputString = $row['id'];
-                        $number = 1000 + $outputString;
-                        $VendorId = "STVN$number";
-                }
+        //previous_code--
+        // if($result ->num_rows >0){
+        //         while($row = mysqli_fetch_array($result)){
+        //                 $outputString = $row['id'];
+        //                 $number = 1000 + $outputString;
+        //                 $VendorId = "STVN$number";
+        //         }
+        //updated cpde--
+        if ($result->num_rows > 0 && $row = mysqli_fetch_assoc($result)) {
+            $VendorId = "STVN" . (1000 + $row['id']);
+        }
         }else{
             $VendorId = "STVN1000";
         }
@@ -52,10 +69,11 @@ if(array_key_exists("all", $_GET)){
         }
         echo json_encode($response);
     }
-}else if(array_key_exists("delete", $_GET)){   
+
+else if(array_key_exists("delete", $_GET)){   
     if($_SERVER['REQUEST_METHOD'] == "POST"){
         $_POST = json_decode(file_get_contents("php://input"), true);
-        $Id = $_POST['id'];
+        $Id = $_POST['id']; 
         $VendorId = $_POST['vendorId'];
 
         $checker = $conn->query("SELECT * FROM vendor WHERE vendorId = '$VendorId'")->fetch_all(MYSQLI_ASSOC);
